@@ -1,26 +1,236 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Annotated working-paper palette: near-white paper, near-black ink,
+     and one red "pen" accent reserved for pointing at something specific —
+     never decoration. */
+  --paper: #ffffff;
+  --paper-recessed: #f3f3f3;
+  --paper-line: #e4e4e4;
+  --ink: #1b1d17;
+  --ink-muted: #5b5f51;
+  --accent: #a2372b;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-background: var(--paper);
+  --color-foreground: var(--ink);
+  --color-paper: var(--paper);
+  --color-paper-recessed: var(--paper-recessed);
+  --color-paper-line: var(--paper-line);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-accent: var(--accent);
+
+  --font-sans: var(--font-source-serif);
   --font-mono: var(--font-geist-mono);
+
+  /* Type scale: 1.25 (major third) ratio off a 17px base, per Elements of
+     Typographic Style. Overriding Tailwind's default text-* scale here
+     means every existing text-{xs..6xl} utility in the codebase picks this
+     scale up without editing component files. */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.5;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.55;
+  --text-base: 1.0625rem;
+  --text-base--line-height: 1.65;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.5;
+  --text-xl: 1.5625rem;
+  --text-xl--line-height: 1.4;
+  --text-2xl: 1.953rem;
+  --text-2xl--line-height: 1.25;
+  --text-3xl: 2.441rem;
+  --text-3xl--line-height: 1.15;
+  --text-4xl: 3.052rem;
+  --text-4xl--line-height: 1.1;
+  --text-5xl: 3.815rem;
+  --text-5xl--line-height: 1.05;
+  --text-6xl: 4.768rem;
+  --text-6xl--line-height: 1;
+
+  /* Max prose measure — kept under 70ch per the design brief. */
+  --measure: 68ch;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* No background here on purpose: html carries bg-[var(--paper)] in every
+   layout, and per the CSS background-propagation rule that makes it the
+   canvas background while leaving body's own box transparent. If body also
+   painted a background, it would sit in a higher paint layer than any
+   z-index:-1 fixed decorative layer and fully hide it — which is exactly
+   what silently happened here until this line was found and removed. */
+body {
+  color: var(--ink);
+  font-family: var(--font-source-serif), Georgia, serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Film grain */
+body::after {
+  content: '';
+  position: fixed;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 200px 200px;
+  opacity: 0.032;
+  pointer-events: none;
+  z-index: 9000;
+  animation: grain 0.8s steps(2) infinite;
+}
+
+/* CSS Scroll-Driven parallax — runs entirely on the compositor, zero JS */
+@supports (animation-timeline: scroll()) {
+  @keyframes bg-parallax {
+    to { transform: translateY(-28vh); }
+  }
+  .parallax-bg {
+    animation: bg-parallax linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0% 100%;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Two-phase homepage (app/(site)/page.tsx):
+   Phase 1 (.intro-phase) is the first full viewport — the line field only.
+   Phase 2 (.content-phase) is the two-column content right below it. Both
+   phases' motion is driven by the same scroll timeline (0 → 100vh), so the
+   intro fades/drifts away exactly as the content fades in — no JS, nothing
+   to trigger, nothing to desync.
+
+   Per-line draw-in and idle drift are still time-based (see IntroLayer.tsx,
+   which generates one @keyframes rule per line for the drift, since each
+   line's baseline differs); this shared rule only sets the pre-animation
+   dasharray/dashoffset state so the per-line `animation` shorthand is the
+   only thing that touches `animation` (avoids a specificity clash between
+   a blanket rule and the per-line one). */
+.intro-layer path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
 }
+@keyframes path-draw-in {
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
+}
+
+/* Same effect as path-draw-in, but for elements animating a real pixel
+   length (via the --len custom property) instead of a pathLength=1
+   normalized fraction — see IntroLeWitt.tsx's circleDrawStyle for why. */
+@keyframes path-draw-in-len {
+  from { stroke-dashoffset: var(--len); }
+  to   { stroke-dashoffset: 0; }
+}
+
+@keyframes intro-fade-drift {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-32px); }
+}
+@supports (animation-timeline: scroll()) {
+  .intro-layer {
+    animation: intro-fade-drift linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 100vh;
+  }
+}
+
+@keyframes content-fade-in {
+  /* Starts at a faint, not-zero opacity: the intro is only ~75vh, so this
+     section's top edge is already peeking above the fold at scroll 0 — if
+     it started fully transparent that peek would show nothing, defeating
+     its job as the (now scroll-cue-less) hint that there's more below. */
+  from { opacity: 0.15; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@supports (animation-timeline: scroll()) {
+  .content-phase {
+    animation: content-fade-in linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 100vh;
+  }
+}
+
+/* prefers-reduced-motion skips the intro entirely: no scroll gate, content
+   is simply there from the start. */
+@media (prefers-reduced-motion: reduce) {
+  .intro-phase { display: none; }
+  .content-phase { opacity: 1; animation: none; transform: none; }
+  /* name=2 sets the name inside .intro-phase, which just got hidden above —
+     this fallback copy (hidden by default) is the only one reduced-motion
+     users see, so the name doesn't disappear along with the decoration. */
+  .name-reduced-fallback { display: block; }
+}
+
+@keyframes grain {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(-2%, -3%); }
+  50%  { transform: translate(3%, 1%); }
+  75%  { transform: translate(-1%, 4%); }
+  100% { transform: translate(2%, -2%); }
+}
+
+/* will-change pre-promotes the hero reveal to a compositor layer — the only
+   motion moment on the page, so nothing else needs a pre-dimmed state. */
+.hero-line, .hero-sub { will-change: transform, opacity; }
+
+/* Homepage category-row previews (HomePreviews.tsx) — no border/box, three
+   different LeWitt "line between two points" pieces, one per category
+   (Trading: a starburst of rays from one point; Research: "The Location of
+   a Line" 's construction lines plus a skewed panel of real text; Games: a
+   diagonally divided plane, straight grid crosshatch meeting diagonal
+   crosshatch). Visible at rest in that category's own TAG_COLOR,
+   brightening on hover — no drawing-in from nothing, no idle animation. */
+.home-preview-line {
+  stroke-width: 1;
+  opacity: 0.6;
+  transition: opacity 0.35s ease, stroke-width 0.35s ease;
+}
+.group:hover .home-preview-line {
+  opacity: 1;
+  stroke-width: 1.3;
+}
+.home-preview-line-heavy {
+  stroke-width: 1.6;
+  opacity: 0.85;
+  transition: opacity 0.35s ease;
+}
+.group:hover .home-preview-line-heavy {
+  opacity: 1;
+}
+.home-preview-text {
+  opacity: 0.55;
+  transition: opacity 0.35s ease;
+}
+.group:hover .home-preview-text {
+  opacity: 0.9;
+}
+/* The three attached shapes spin together as one rigid structure on
+   hover — perspective lives inside the same transform (not a separate
+   parent), which is the standard flat-card-spin technique and needs no
+   wrapping element. Off by default; only runs on hover, and never for
+   reduced-motion. */
+.home-preview-spin {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .group:hover .home-preview-spin {
+    animation: home-preview-spin 2.2s linear infinite;
+  }
+}
+@keyframes home-preview-spin {
+  from { transform: perspective(320px) rotateY(0deg); }
+  to { transform: perspective(320px) rotateY(360deg); }
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
+  color: var(--ink);
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--paper-line); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-muted); }

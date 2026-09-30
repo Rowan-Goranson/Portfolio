@@ -4,6 +4,7 @@ import IntroRippleOverlap from "./IntroRippleOverlap";
 import IntroLeWitt from "./IntroLeWitt";
 import { HomeTradingLine, HomeResearchLine, HomeGamesLine } from "./HomePreviews";
 import HomeProofStrip from "./HomeProofStrip";
+import HeroSkills from "./HeroSkills";
 
 const tradingSection = {
   title: "Trading Algorithms",
@@ -163,14 +164,17 @@ export default async function Home({
           // tracing a specific line's exact curve. The lines themselves fade
           // out under this text (see IntroRipple's fadeMask prop) instead of
           // being covered by an opaque box.
-          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 px-[7vw]">
-            <p className="font-light text-[clamp(1rem,2vw,1.375rem)] leading-snug tracking-tight text-[var(--ink-muted)] max-w-[46ch] mb-4">
-                    live systematic trading in prediction markets, fixed-income quantitative research at Tradeweb, Dual econ-math honors thesis, and top-tier
-                    competitor across chess, catan, and poker
-            </p>
-            <h1 className="font-light text-[clamp(2.5rem,5vw,4rem)] leading-none tracking-tight">
-              <span className="text-[var(--ink)]">rowan</span> <span className="text-[var(--accent)]">goranson</span>
-            </h1>
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 px-[7vw] flex items-start justify-between gap-10">
+            <div>
+              <p className="font-light text-[clamp(1rem,2vw,1.375rem)] leading-snug tracking-tight text-[var(--ink-muted)] max-w-[46ch] mb-4">
+                      live systematic trading in prediction markets, fixed-income quantitative research at Tradeweb, Dual econ-math honors thesis, and top-tier
+                      competitor across chess, catan, and poker
+              </p>
+              <h1 className="font-light text-[clamp(2.5rem,5vw,4rem)] leading-none tracking-tight">
+                <span className="text-[var(--ink)]">rowan</span> <span className="text-[var(--accent)]">goranson</span>
+              </h1>
+            </div>
+            <HeroSkills />
           </div>
         )}
         {/* Fixed to the true viewport, not this section's own box — the
@@ -216,13 +220,18 @@ export default async function Home({
               // prefers-reduced-motion, so this fallback is the only
               // copy of the name reduced-motion users would otherwise see.
               <div className="name-reduced-fallback hidden">
-                <p className="font-light text-lg leading-snug tracking-tight text-[var(--ink-muted)] max-w-[46ch] mb-4">
-                  Live systematic trading in prediction markets, fixed-income quantitative research at Tradeweb, Dual Econ-Math Honors Thesis, and top-tier
-                  competitor across Chess, Catan, and Poker
-                </p>
-                <h1 className="font-light text-[clamp(3rem,6vw,5rem)] leading-[0.95] tracking-tight mb-6">
-                  <span className="text-[var(--ink)]">rowan</span> <span className="text-[var(--accent)]">goranson</span>
-                </h1>
+                <div className="flex items-start justify-between gap-10">
+                  <div>
+                    <p className="font-light text-lg leading-snug tracking-tight text-[var(--ink-muted)] max-w-[46ch] mb-4">
+                      Live systematic trading in prediction markets, fixed-income quantitative research at Tradeweb, Dual Econ-Math Honors Thesis, and top-tier
+                      competitor across Chess, Catan, and Poker
+                    </p>
+                    <h1 className="font-light text-[clamp(3rem,6vw,5rem)] leading-[0.95] tracking-tight mb-6">
+                      <span className="text-[var(--ink)]">rowan</span> <span className="text-[var(--accent)]">goranson</span>
+                    </h1>
+                  </div>
+                  <HeroSkills />
+                </div>
               </div>
             ) : (
               <NameStackedIndent />

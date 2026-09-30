@@ -20,12 +20,24 @@ const H = 900;
 const STROKE = "#1a1a1a";
 const OPACITY = 0.35;
 
-// Same mask as IntroRipple/IntroRippleOverlap's fadeMask — the name=2 ("on
-// the line") treatment sits here, and the Arcs variant's circles converge
-// densely near center, so it needs the same fade-out treatment to stay
-// legible without a hard-edged box.
-const NAME_FADE_MASK =
-  "radial-gradient(ellipse 26% 16% at 24% 50%, transparent 0%, transparent 45%, black 100%)";
+// Two fade holes — one for the name, one for HeroSkills on the right — cut
+// with an SVG-native <mask> rather than a CSS mask-image. A CSS mask-image
+// needs two gradient layers plus `mask-composite: intersect` to punch two
+// independent holes (the default "add" compositing makes each hole's own
+// *opaque* area paint over the other's hole), and that combination turned
+// out not to render correctly in testing despite computing correctly —
+// SVG's own <mask> element draws each hole as ordinary overlapping shapes
+// with no composite-mode ambiguity, so it just works. Two more things
+// confirmed by direct testing: circles, not ellipses (this browser engine
+// fails to paint an objectBoundingBox radial-gradient onto a non-square
+// bounding box — silently renders as fully transparent, no error, no hole),
+// and each circle's full extent has to stay inside the SVG's own viewBox
+// (0,0,W,H) — a circle whose edge crosses outside it breaks the gradient
+// for every shape in the mask, not just the one that crosses.
+const FADE_HOLES = [
+  { cx: 0.24, cy: 0.5, r: 230 }, // name
+  { cx: 0.87, cy: 0.6, r: 175 }, // HeroSkills — cx+r must stay under W (1440)
+];
 
 function drawStyle(index: number, total: number, span = 0.7, duration = 0.9) {
   const delay = total > 1 ? (index / (total - 1)) * span : 0;
@@ -235,8 +247,23 @@ export default function IntroLeWitt({ variant, fadeMask = false }: { variant: 1 
       viewBox={`0 0 ${W} ${H}`}
       preserveAspectRatio="none"
       aria-hidden="true"
-      style={fadeMask ? { maskImage: NAME_FADE_MASK, WebkitMaskImage: NAME_FADE_MASK } : undefined}
+      mask={fadeMask ? "url(#hero-fade-mask)" : undefined}
     >
+      {fadeMask && (
+        <defs>
+          <radialGradient id="hero-fade-hole">
+            <stop offset="0%" stopColor="black" />
+            <stop offset="45%" stopColor="black" />
+            <stop offset="100%" stopColor="white" />
+          </radialGradient>
+          <mask id="hero-fade-mask" maskUnits="userSpaceOnUse" x={-W} y={-H} width={W * 3} height={H * 3}>
+            <rect x={-W} y={-H} width={W * 3} height={H * 3} fill="white" />
+            {FADE_HOLES.map((h, i) => (
+              <circle key={i} cx={h.cx * W} cy={h.cy * H} r={h.r} fill="url(#hero-fade-hole)" />
+            ))}
+          </mask>
+        </defs>
+      )}
       <g stroke={STROKE} strokeOpacity={OPACITY} strokeWidth={1} fill="none">
         {variant === 1 && <FourDirections />}
         {variant === 2 && <ArcsFromPoints />}

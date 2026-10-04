@@ -71,6 +71,7 @@ export const projects: Project[] = [
     oneLiner: "Skew-t fair-value model for NYC temperature contracts, driving the live Kalshi execution stack.",
     tags: ["Trading", "Research"],
     heroVisual: "placeholder",
+    repoUrl: "https://github.com/Rowan-Goranson/Kalshi-Weather-Trading",
     status: "live",
   },
   {
@@ -81,6 +82,7 @@ export const projects: Project[] = [
     oneLiner: "Pairs-trading backtester across S&P 500 constituents using cointegration and inverse-volatility sizing.",
     tags: ["Trading", "Research"],
     heroVisual: "placeholder",
+    repoUrl: "https://github.com/Rowan-Goranson/Statistical-Arbitrage-Back-tester",
     status: "backtest",
   },
   {
@@ -91,6 +93,7 @@ export const projects: Project[] = [
     oneLiner: "From-scratch closed-form Black-Scholes option pricer in C++, exposed to Python via pybind11 bindings.",
     tags: ["Trading"],
     heroVisual: "placeholder",
+    repoUrl: "https://github.com/Rowan-Goranson/Derivatives-Pricer",
     status: "research",
   },
 

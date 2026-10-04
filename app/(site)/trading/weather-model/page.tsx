@@ -70,6 +70,17 @@ export default function WeatherModelPage() {
             <WhyBox label="data provenance">{DATA_PROVENANCE_NOTE}</WhyBox>
           </div>
         </div>
+
+        {project.repoUrl && (
+          <a
+            href={project.repoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block mt-10 text-sm font-mono text-[var(--accent)] hover:text-[var(--ink)] transition-colors"
+          >
+            view source on github ↗
+          </a>
+        )}
       </section>
 
       <Link

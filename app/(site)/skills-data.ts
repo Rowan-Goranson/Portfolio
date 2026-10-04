@@ -247,9 +247,9 @@ export const softSkills: SoftSkillGroup[] = [
   {
     name: "Work Experience",
     entries: [
-      { title: "Tradeweb — Quantitative Research Intern", description: "DV01-matched Treasury hedging and rates relative-value research (Jun–Aug 2026)" },
+      { title: "Tradeweb — Quantitative Research Intern", description: "Rates bachelier relative-value research, macro Pred Market Contracts (Jun–Aug 2026)" },
       { title: "Nielsen — Data Science Intern", description: "Databricks/PySpark deep-learning pipeline for purchase-journey analytics (Jun–Aug 2025)" },
-      { title: "Rakuten Advertising — Business Development Intern", description: "Automated outreach scripts lifted response rates ~50%, adopted team-wide (Jun–Aug 2024)" },
+      { title: "Rakuten Advertising — Business Development Intern", description: "Created automated sales strategy to lift response rates ~50%, adopted team-wide (Jun–Aug 2024)" },
     ],
   },
   {

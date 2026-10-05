@@ -1,15 +1,20 @@
 import Link from "next/link";
 import TagChip from "../../TagChip";
 import { findProject, CATEGORY_LABEL } from "../../projects-data";
-import { STAT_ARB_PORTFOLIO } from "../trading-content-data";
+import { STAT_ARB_PORTFOLIO, STAT_ARB_WALKFORWARD } from "../trading-content-data";
 import PairLeaderboard from "./PairLeaderboard";
 import EquityCurve from "./EquityCurve";
 import SignalExample from "./SignalExample";
-import SensitivityHeatmap from "./SensitivityHeatmap";
+import WalkForwardCurve from "./WalkForwardCurve";
+import VersionTable from "./VersionTable";
+import LeverageTable from "./LeverageTable";
 
 export default function StatArbPage() {
   const project = findProject("trading", "stat-arb")!;
-  const { summary, spyTotalReturn, window: backtestWindow, riskParityWeights, leverage } = STAT_ARB_PORTFOLIO;
+  const wf = STAT_ARB_WALKFORWARD;
+  const v1 = STAT_ARB_PORTFOLIO;
+  const oneX = wf.leverage[0];
+  const foldsPositive = wf.folds.filter((f) => f.ret > 0).length;
 
   return (
     <div className="pt-10 pb-24">
@@ -20,9 +25,12 @@ export default function StatArbPage() {
         <h1 className="text-[1.75rem] font-semibold leading-tight mb-4 text-[var(--ink)]">{project.title}</h1>
         <p className="text-base text-[var(--ink-muted)] leading-relaxed max-w-[62ch] mb-1">{project.oneLiner}</p>
         <p className="font-mono text-sm text-[var(--accent)] mb-1">
-          {backtestWindow}: +{(summary.totalReturn * 100).toFixed(0)}% ({leverage}x, top 5 pairs) vs. +
-          {(spyTotalReturn * 100).toFixed(0)}% SPY · Sharpe {summary.sharpe.toFixed(2)} · max drawdown{" "}
-          {(summary.maxDrawdown * 100).toFixed(0)}%
+          walk-forward {wf.window}: {(oneX.cumReturn * 100).toFixed(0)}% (1x) vs. +{(wf.spyTotalReturn * 100).toFixed(0)}% SPY · Sharpe{" "}
+          {oneX.sharpe.toFixed(2)} · max drawdown {(oneX.maxDrawdown * 100).toFixed(0)}%
+        </p>
+        <p className="text-sm text-[var(--ink-muted)] leading-relaxed max-w-[62ch] mb-1">
+          This page originally led with +{(v1.summary.totalReturn * 100).toFixed(0)}% (Sharpe {v1.summary.sharpe.toFixed(2)}). That number did not survive
+          out-of-sample validation — below is what changed and why.
         </p>
         <p className="font-mono text-xs text-[var(--ink-muted)] mb-8">backtest only — never traded live, not connected to any broker</p>
 
@@ -35,48 +43,71 @@ export default function StatArbPage() {
         <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-x-10 gap-y-10">
           <div className="flex flex-col gap-8">
             <div>
-              <p className="font-mono text-xs text-[var(--ink-muted)] mb-4">1. top 10 cointegrated pairs — S&amp;P 500, 2018–2023</p>
-              <PairLeaderboard />
+              <p className="font-mono text-xs text-[var(--ink-muted)] mb-4">1. research process — same strategy, three versions</p>
+              <VersionTable />
               <p className="font-mono text-[11px] text-[var(--ink-muted)] leading-relaxed mt-3">
-                Screened ~1,225 pairs from 50 large-caps for correlation &gt;0.8, then Engle-Granger cointegration p&lt;0.01. Each row is
-                its own independent backtest of the strategy&apos;s real entry/exit z-score rules.
+                v1 picked pairs, hedge ratios and z-score parameters on the full sample, acted on a same-bar close (look-ahead), and a
+                positional-argument bug fed the wrong stop-loss and cost settings into the pair ranking. Fixing the bugs (v2, top 10 pairs)
+                made the in-sample result look <em>better</em> (Sharpe 3.4) — a sign the in-sample fit, not the strategy, was
+                producing the return. v3 re-estimates everything on a 2-year formation window and trades the next 6 months with those
+                estimates frozen ({wf.folds.length} folds, {wf.nDays.toLocaleString()} out-of-sample days).
               </p>
             </div>
 
             <div>
-              <p className="font-mono text-xs text-[var(--ink-muted)] mb-4">2. portfolio — top 5 pairs, inverse-volatility weighted, {leverage}x leverage</p>
-              <EquityCurve />
+              <p className="font-mono text-xs text-[var(--ink-muted)] mb-4">2. walk-forward out-of-sample return, {wf.window}</p>
+              <WalkForwardCurve />
               <p className="font-mono text-[11px] text-[var(--ink-muted)] leading-relaxed mt-3">
-                Real weights: {riskParityWeights.map((w) => `${w.pair} ${(w.weight * 100).toFixed(0)}%`).join(" · ")}. Beats SPY on raw
-                return over this window, but at a much larger drawdown — {(summary.maxDrawdown * 100).toFixed(0)}% vs. a much milder SPY
-                decline in the same March 2020 stretch, the cost of {leverage}x leverage on a concentrated 5-pair book.
+                Pairs chosen by cointegration p-value only (p&lt;0.01, top 10 per fold), never by backtest Sharpe. Equal-weighted, 1x, no
+                borrow costs on the short leg. {foldsPositive} of {wf.folds.length} folds were profitable; the cointegrating relationships
+                found in each formation window did not persist into the next.
               </p>
             </div>
           </div>
 
           <div className="flex flex-col gap-8">
             <div>
-              <p className="font-mono text-xs text-[var(--ink-muted)] mb-4">3. the signal — one pair&apos;s real z-score</p>
-              <SignalExample />
-            </div>
-
-            <div>
-              <p className="font-mono text-xs text-[var(--ink-muted)] mb-4">4. sensitivity — slippage assumptions, not volatility, drive the result</p>
-              <SensitivityHeatmap />
+              <p className="font-mono text-xs text-[var(--ink-muted)] mb-4">3. what leverage does to a negative edge</p>
+              <LeverageTable />
               <p className="font-mono text-[11px] text-[var(--ink-muted)] leading-relaxed mt-3">
-                Re-ran the full top-5 portfolio at every combination of the two slippage-model knobs. Sharpe is flat across
-                volatility_factor but drops from 0.83 to 0.36 as liquidity_factor alone rises 20x — this backtest&apos;s edge lives or
-                dies on how expensive trading is assumed to be, not on how volatile the market is.
+                Same out-of-sample returns scaled by L, minus {(wf.financingRate * 100).toFixed(0)}%/yr financing on the borrowed part.
+                Leverage multiplies the loss and adds volatility drag; at 10x the worst day ({(wf.leverage[5].worstDay * 100).toFixed(0)}%)
+                is enough to nearly wipe the account.
               </p>
             </div>
 
             <div className="border border-[var(--paper-line)] p-5">
               <p className="font-mono text-xs text-[var(--accent)] mb-2">honest limitations</p>
               <p className="text-sm text-[var(--ink-muted)] leading-relaxed">
-                No borrow costs, no market-impact modeling beyond the linear slippage terms above, and pair selection uses the full
-                2018–2023 window rather than a walk-forward split — so the same data that picked the top 10 pairs also backtested them.
-                A real deployment would need out-of-sample pair selection before this Sharpe means anything predictive.
+                One parameter set and a short window that includes March 2020. The universe is 50 current mega-caps (survivorship bias),
+                with no borrow or market-impact costs beyond a linear slippage term. A nested search over entry/exit z-score and
+                p-value cutoff, chosen only on formation data, did not help (1x Sharpe −1.04). Next: sector-matched pairs, log prices
+                and a rolling hedge ratio.
               </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-16 pt-10 border-t border-[var(--paper-line)]">
+          <p className="font-mono text-xs text-[var(--accent)] mb-1">v1 as originally published — in-sample, kept for comparison</p>
+          <p className="font-mono text-[11px] text-[var(--ink-muted)] leading-relaxed max-w-[70ch] mb-8">
+            Not predictive: pairs, hedge ratios and the slippage grid were all fit on the data they were scored on. The slippage
+            sensitivity grid shown here before was also an artifact — a units error meant the volatility term had no effect on cost.
+          </p>
+          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-x-10 gap-y-10">
+            <div className="flex flex-col gap-8">
+              <div>
+                <p className="font-mono text-xs text-[var(--ink-muted)] mb-4">top 10 cointegrated pairs — S&amp;P 500, 2018–2023 (in-sample)</p>
+                <PairLeaderboard />
+              </div>
+              <div>
+                <p className="font-mono text-xs text-[var(--ink-muted)] mb-4">v1 portfolio — top 5 pairs, {v1.leverage}x, in-sample</p>
+                <EquityCurve />
+              </div>
+            </div>
+            <div>
+              <p className="font-mono text-xs text-[var(--ink-muted)] mb-4">the signal — one pair&apos;s z-score (in-sample fit)</p>
+              <SignalExample />
             </div>
           </div>
         </div>

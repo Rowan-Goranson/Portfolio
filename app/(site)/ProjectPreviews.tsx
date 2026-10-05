@@ -5,7 +5,7 @@
 // for projects that have one. Projects without a preview here fall back to
 // the plain placeholder box.
 
-import { DISTRIBUTION_COMPARISON, TRADE_LEDGER, STAT_ARB_PORTFOLIO, BS_CURVE } from "./trading/trading-content-data";
+import { DISTRIBUTION_COMPARISON, TRADE_LEDGER, STAT_ARB_WALKFORWARD, BS_CURVE } from "./trading/trading-content-data";
 import { MM_TUNING, POINT_SHAVING_SKEW, MML_COMPARISON } from "./research/research-content-data";
 import { generateBoard } from "@/lib/catan/board";
 import { buildCatanLayout } from "@/lib/catan/layout";
@@ -86,7 +86,7 @@ function SkewProbitPreview() {
 }
 
 function StatArbPreview() {
-  return <CurvePreview values={STAT_ARB_PORTFOLIO.cumulative} />;
+  return <CurvePreview values={STAT_ARB_WALKFORWARD.cum1x} />;
 }
 
 function MmlCrimePreview() {
